@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Events</title>
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    h1 {
+        text-align: center;
+        margin: 20px 0;
+    }
+    .container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+    }
+    ul {
+        list-style-type: disc;
+        margin: 20px 0;
+        padding-left: 20px;
+        font-size: 1.2em;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    li {
+        margin-bottom: 15px;
+    }
+    .forms-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 300px;
+    }
+    .form {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        font-size: 1em;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    textarea {
+        resize: none;
+        height: 80px;
+    }
+    .btn {
+        background-color: #007BFF;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+    }
+    .btn:hover {
+        background-color: #0056b3;
+    }
+    /* Responsive Layout for Small Screens */
+    @media (max-width: 768px) {
+        .forms-container {
+            position: static;
+            width: 100%;
+        }
+        .form {
+            margin: 10px 0;
+        }
+    }
+</style>
+<body>
+    <h1>Family Events</h1>
+    <div class="container">
+        <h2>Today's Events</h2>
+        <ul id="events"></ul>
+    </div>
+
+    <div class="forms-container">
+        <div id="addEventFormContainer" class="form">
+            <h3>Add New Event</h3>
+            <form id="addEventForm">
+                <div class="form-group">
+                    <select id="memberId" required>
+                        <option value="" disabled selected>Select a member</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="eventName" placeholder="Event Name" required />
+                </div>
+                <div class="form-group">
+                    <input type="date" id="eventDate" required />
+                </div>
+                <div class="form-group">
+                    <input type="time" id="eventTime" required />
+                </div>
+                <div class="form-group">
+                    <textarea id="eventDescription" placeholder="Description"></textarea>
+                </div>
+                <button type="submit" class="btn">Add Event</button>
+            </form>
+        </div>
+
+        <div id="recurringEventFormContainer" class="form">
+            <h3>Add Recurring Event</h3>
+            <form id="addRecurringEventForm">
+                <div class="form-group">
+                    <select id="recurringMemberId" required>
+                        <option value="" disabled selected>Select a member</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="recurringEventName" placeholder="Event Name" required />
+                </div>
+                <div class="form-group">
+                    <input type="time" id="recurringEventTime" required />
+                </div>
+                <div class="form-group">
+                    <textarea id="recurringEventDescription" placeholder="Description"></textarea>
+                </div>
+                <div class="form-group">
+                    <select id="dayOfWeek" required>
+                        <option value="" disabled selected>Select Day of the Week</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Add Recurring Event</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const eventsContainer = document.getElementById('events');
+
+        function formatTimeTo12Hour(time) {
+            const [hour, minute, second] = time.split(':'); // Split the time string (HH:MM:SS)
+            const period = hour >= 12 ? 'PM' : 'AM'; // Determine AM/PM
+            const formattedHour = hour % 12 || 12; // Convert hour to 12-hour format (0 becomes 12)
+            return `${formattedHour}:${minute} ${period}`; // Return formatted time
+        }
+    
+        // Fetch today's events
+        async function fetchEvents() {
+            try {
+                const response = await fetch('/events');
+                const events = await response.json();
+        
+                // Sort events by time
+                events.sort((a, b) => a.event_time.localeCompare(b.event_time));
+        
+                // Render sorted and formatted events
+                eventsContainer.innerHTML = events.map(event => `
+                    <li>
+                        <strong>${formatTimeTo12Hour(event.event_time)}</strong> - ${event.event_name} - ${event.member_name} - ${event.description}
+                    </li>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching events:', error);
+            }
+        }   
+        // Add a new event
+        document.getElementById('addEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newEvent = {
+                member_id: document.getElementById('memberId').value,
+                event_name: document.getElementById('eventName').value,
+                event_date: document.getElementById('eventDate').value,
+                event_time: document.getElementById('eventTime').value,
+                description: document.getElementById('eventDescription').value
+            };
+            await fetch('/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newEvent),
+            });
+            document.getElementById('addEventForm').reset();
+            setDefaultDate(); // Reset the date to today's date
+            fetchEvents();
+        });
+    
+        // Add a recurring event
+        document.getElementById('addRecurringEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newRecurringEvent = {
+                member_id: document.getElementById('recurringMemberId').value,
+                event_name: document.getElementById('recurringEventName').value,
+                event_time: document.getElementById('recurringEventTime').value,
+                description: document.getElementById('recurringEventDescription').value,
+                day_of_week: document.getElementById('dayOfWeek').value
+            };
+            await fetch('/recurring-events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newRecurringEvent),
+            });
+            document.getElementById('addRecurringEventForm').reset();
+            fetchEvents();
+        });
+    
+        // Fetch members for both forms
+        async function fetchMembers() {
+            try {
+                const response = await fetch('/members');
+                const members = await response.json();
+                const memberSelects = [document.getElementById('memberId'), document.getElementById('recurringMemberId')];
+    
+                members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = member.name;
+    
+                    memberSelects.forEach(select => {
+                        const newOption = option.cloneNode(true);
+                        select.appendChild(newOption);
+                    });
+                });
+            } catch (error) {
+                console.error('Error fetching members:', error);
+            }
+        }
+    
+        // Set default date
+        function setDefaultDate() {
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.getElementById('eventDate').value = formattedDate;
+        }
+    
+        // Initialize the page
+        fetchMembers();
+        fetchEvents();
+        setDefaultDate(); // Set today's date as default
+    </script>
+
+</body>
+</html>
+
