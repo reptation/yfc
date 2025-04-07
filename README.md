@@ -1,2 +1,2 @@
-# yfa
-Your family app
+# yfc
+Your family calendar
